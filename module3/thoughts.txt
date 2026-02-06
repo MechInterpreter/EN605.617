@@ -1,0 +1,55 @@
+Module 03 Results Summary
+
+What I ran
+- I compared a baseline version (no if/else) against a branching version (one if/else) on both CPU and GPU.
+- Data size n was 4194304 floats.
+- Each timing was for iters = 50 repeats.
+- I ran several GPU launch configurations using totalThreads and blockSize.
+
+How to read the key number
+- branch penalty = (branch time) / (baseline time)
+- 1.0x means no change.
+- 2.0x means the branching version is twice as slow.
+
+Results from my runs (CPU penalty, GPU penalty)
+- T512 B256:  CPU 11.98x, GPU 0.59x
+- T1024 B256: CPU 11.42x, GPU 1.02x
+- T2048 B256: CPU 11.22x, GPU 1.02x
+- T1024 B128: CPU 13.55x, GPU 1.38x
+- T1024 B512: CPU  9.11x, GPU 0.79x
+
+What I observed
+- The CPU branch penalty was very large, about 9.11x to 13.55x (average about 11.45x).
+- The GPU branch penalty was much smaller, about 0.59x to 1.38x (average about 0.96x).
+- Changing totalThreads and blockSize noticeably changed GPU kernel time. For example, increasing totalThreads from 512 to 2048 reduced baseline GPU time a lot.
+- CPU times should not depend on totalThreads or blockSize, and in my code they do not use those values.
+
+Why the CPU penalty was so large in these results
+A simple if/else usually does not cause a 10x slowdown by itself. A likely reason is compiler optimization:
+- The baseline loop has straight line math and can be auto-vectorized (SIMD). That means the compiler can process multiple floats per iteration using wide CPU registers.
+- The branching loop has a data-dependent if/else, which often prevents auto-vectorization. That forces more scalar work and can also trigger branch mispredictions.
+The combination (loss of vectorization plus branch behavior) can cause a big slowdown.
+
+Why the GPU penalty was smaller (and sometimes below 1.0x)
+- On the GPU, an if/else can cause warp divergence if threads in the same warp take different paths.
+- In these runs, the branching cost did not dominate overall kernel time most of the time. The penalties were near 1.0x for several configurations.
+- Some configurations even showed branch penalty below 1.0x. That can happen due to normal run-to-run variation, differences in scheduling/occupancy, or the kernel being limited by memory traffic instead of compute. It means the branch was not the bottleneck in those cases.
+
+What I would do if I wanted even steadier numbers
+- Increase iters (for example 200) and rerun to reduce noise.
+- Keep the same n and compare branch penalties again.
+
+Response to the "previous year main" question (single execution)
+
+Good parts
+- It runs both a GPU kernel and a CPU function, so it attempts a direct comparison.
+- It supports changing blocks and threads via command line arguments.
+- It allocates device memory and copies inputs to the GPU.
+
+Bad parts (especially if main runs only once)
+- The GPU timing is not reliable because kernel launches are asynchronous. Timing around add<<<blocks,threads>>>() without cudaDeviceSynchronize() or CUDA events mostly measures launch overhead, not true kernel runtime.
+- Single-run timing is noisy and includes one-time overhead (CUDA context startup, caching effects). Results can be misleading.
+- There is no CUDA error checking for cudaMalloc, cudaMemcpy, or the kernel launch, so failures could be hidden.
+- There is no correctness check comparing CPU and GPU outputs, so it does not prove the GPU result matches the CPU result.
+- Depending on how the kernel is written, blocks*threads might not cover all N elements unless there is bounds checking or a grid-stride loop.
+- Using large fixed-size arrays on the stack (int a[N], b[N], c[N]) can cause a stack overflow if N is large.
