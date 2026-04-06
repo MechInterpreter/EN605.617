@@ -8,7 +8,8 @@
 #include <cstdio>
 #include <vector>
 
-// Process one intervention: copy input, mask, forward.
+// Process one intervention: copy input, apply mask
+// at the correct layer during forward pass.
 // Returns the ablated logit.
 static float run_single_intervention(
     cublasHandle_t handle,
@@ -24,29 +25,23 @@ static float run_single_intervention(
     float* d_logits, float* d_heads,
     float* d_logit_out
 ) {
-    // Copy clean input
-    CUDA_CHECK(cudaMemcpy(
-        d_work, d_input,
-        slice * sizeof(float),
-        cudaMemcpyDeviceToDevice));
+    const Intervention& iv = ivs[iv_idx];
 
-    // Generate + apply mask using Thrust
+    // Generate mask for this intervention
     thrust::device_vector<float> d_mask;
     generate_ablation_masks(
         cfg, ivs, iv_idx, 1, d_mask);
 
-    thrust::device_ptr<float> dp(d_work);
-    thrust::transform(
-        dp, dp + slice,
-        d_mask.begin(), dp,
-        thrust::multiplies<float>());
+    const float* mask_ptr =
+        thrust::raw_pointer_cast(d_mask.data());
 
-    // Forward pass with ablated input
+    // Forward pass with per-layer intervention
     transformer_forward(
-        handle, cfg, weights, d_work,
+        handle, cfg, weights, d_input,
         d_res, d_Q, d_K, d_V, d_attn,
         d_mlp_h, d_mlp_o, d_logits,
-        d_heads, 0, d_logit_out);
+        d_heads, 0, d_logit_out,
+        iv.layer_idx, iv.type, mask_ptr);
 
     // Copy logit back
     float ablated;

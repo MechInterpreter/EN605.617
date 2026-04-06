@@ -4,6 +4,7 @@
 #include "benchmark.h"
 #include "validation.h"
 #include "ablation.h"
+#include "weight_io.h"
 #include "../include/cuda_utils.h"
 #include "../include/config.h"
 #include "../include/types.h"
@@ -53,10 +54,14 @@ static void print_config(const ModelConfig& cfg) {
            cfg.seq_len);
     printf("    mlp_dim        = %d\n",
            cfg.mlp_dim);
+    printf("    num_layers     = %d\n",
+           cfg.num_layers);
     printf("    num_components = %d + 1 = %d\n",
            cfg.num_heads, cfg.num_components);
     printf("    vocab_size     = %d\n",
            cfg.vocab_size);
+    printf("    norm_eps       = %.1e\n",
+           cfg.norm_eps);
     printf("\n");
 }
 
@@ -100,12 +105,18 @@ static float compute_clean_logit(
 
 // Print usage
 static void print_usage(const char* prog) {
-    printf("Usage: %s [mode]\n", prog);
+    printf("Usage: %s [mode] [options]\n", prog);
+    printf("Modes:\n");
     printf("  --baseline   Sequential (64 ivs)\n");
     printf("  --batched    Batched (64, bs=32)\n");
     printf("  --benchmark  Full sweep\n");
     printf("  --validate   Correctness check\n");
     printf("  --all        validate + benchmark\n");
+    printf("Options:\n");
+    printf("  --weights <dir>  Load weights from "
+           "directory\n");
+    printf("  --layers <N>     Num transformer "
+           "layers\n");
 }
 
 // Run baseline mode
@@ -133,8 +144,10 @@ static void run_baseline_mode(
     int top = std::min(10, num_iv);
     printf("\nFirst %d causal scores:\n", top);
     for (int i = 0; i < top; i++) {
-        printf("  [%d] comp=%d tok=%d sc=%.6f\n",
-               i, ivs[i].component_idx,
+        printf("  [%d] L%d comp=%d tok=%d "
+               "sc=%.6f\n",
+               i, ivs[i].layer_idx,
+               ivs[i].component_idx,
                ivs[i].token_pos, scores[i]);
     }
 }
@@ -165,8 +178,10 @@ static void run_batched_mode(
     int top = std::min(10, num_iv);
     printf("\nFirst %d causal scores:\n", top);
     for (int i = 0; i < top; i++) {
-        printf("  [%d] comp=%d tok=%d sc=%.6f\n",
-               i, ivs[i].component_idx,
+        printf("  [%d] L%d comp=%d tok=%d "
+               "sc=%.6f\n",
+               i, ivs[i].layer_idx,
+               ivs[i].component_idx,
                ivs[i].token_pos, scores[i]);
     }
 }
@@ -176,7 +191,9 @@ static float setup_model(
     cublasHandle_t handle,
     ModelConfig& cfg,
     ModelWeights& w,
-    float** d_input
+    float** d_input,
+    const char* weights_dir,
+    int num_layers
 ) {
     cfg.embed_dim      = DEFAULT_EMBED_DIM;
     cfg.num_heads      = DEFAULT_NUM_HEADS;
@@ -185,10 +202,27 @@ static float setup_model(
     cfg.mlp_dim        = DEFAULT_MLP_DIM;
     cfg.num_components = DEFAULT_NUM_COMPONENTS;
     cfg.vocab_size     = DEFAULT_VOCAB_SIZE;
+    cfg.num_layers     = num_layers;
+    cfg.norm_eps       = DEFAULT_NORM_EPS;
     print_config(cfg);
 
-    printf("  Initializing model weights...\n");
-    allocate_model_weights(cfg, w);
+    bool loaded = false;
+    if (weights_dir) {
+        printf("  Loading weights from %s...\n",
+               weights_dir);
+        loaded = load_model_weights_from_dir(
+            weights_dir, cfg, w);
+        if (!loaded) {
+            printf("  Failed to load weights, "
+                   "falling back to synthetic.\n");
+        }
+    }
+
+    if (!loaded) {
+        printf("  Initializing synthetic "
+               "weights...\n");
+        allocate_model_weights(cfg, w);
+    }
 
     int n = cfg.seq_len * cfg.embed_dim;
     CUDA_CHECK(cudaMalloc(
@@ -209,15 +243,28 @@ int main(int argc, char** argv) {
         VALIDATE, ALL
     };
     Mode mode = ALL;
+    const char* weights_dir = nullptr;
+    int num_layers = DEFAULT_NUM_LAYERS;
 
-    if (argc > 1) {
-        const char* a = argv[1];
-        if      (!strcmp(a, "--baseline"))  mode = BASELINE;
-        else if (!strcmp(a, "--batched"))   mode = BATCHED;
-        else if (!strcmp(a, "--benchmark")) mode = BENCHMARK;
-        else if (!strcmp(a, "--validate"))  mode = VALIDATE;
-        else if (!strcmp(a, "--all"))       mode = ALL;
-        else if (!strcmp(a, "-h") ||
+    for (int i = 1; i < argc; i++) {
+        const char* a = argv[i];
+        if (!strcmp(a, "--baseline")) {
+            mode = BASELINE;
+        } else if (!strcmp(a, "--batched")) {
+            mode = BATCHED;
+        } else if (!strcmp(a, "--benchmark")) {
+            mode = BENCHMARK;
+        } else if (!strcmp(a, "--validate")) {
+            mode = VALIDATE;
+        } else if (!strcmp(a, "--all")) {
+            mode = ALL;
+        } else if (!strcmp(a, "--weights")
+                   && i + 1 < argc) {
+            weights_dir = argv[++i];
+        } else if (!strcmp(a, "--layers")
+                   && i + 1 < argc) {
+            num_layers = atoi(argv[++i]);
+        } else if (!strcmp(a, "-h") ||
                  !strcmp(a, "--help")) {
             print_usage(argv[0]);
             return 0;
@@ -238,7 +285,8 @@ int main(int argc, char** argv) {
     ModelWeights w;
     float* d_input;
     float cl = setup_model(
-        handle, cfg, w, &d_input);
+        handle, cfg, w, &d_input,
+        weights_dir, num_layers);
 
     switch (mode) {
     case BASELINE:

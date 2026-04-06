@@ -87,10 +87,15 @@ static void print_top_interventions(
     printf("  Top-%d most important:\n", top);
     for (int i = 0; i < top; i++) {
         const Intervention& iv = ivs[h_ri[i]];
+        const char* type_str =
+            iv.type == IV_ATTN_HEAD ? "attn" :
+            iv.type == IV_MLP_OUT   ? "mlp"  :
+                                      "resid";
         printf(
-            "    #%d: iv %d (comp=%d tok=%d)"
-            " score=%.6f\n",
+            "    #%d: iv %d (L%d %s comp=%d "
+            "tok=%d) score=%.6f\n",
             i+1, h_ri[i],
+            iv.layer_idx, type_str,
             iv.component_idx,
             iv.token_pos, h_rs[i]);
     }
@@ -115,6 +120,8 @@ bool run_validation(
            "================================\n");
     printf("  Interventions : %d\n", num_iv);
     printf("  Batch size    : %d\n", batch_size);
+    printf("  Layers        : %d\n",
+           cfg.num_layers);
     printf("  Tolerance     : %.1e\n", TOLERANCE);
     printf("------------------------------------"
            "--------------------------------\n");
@@ -129,7 +136,8 @@ bool run_validation(
     run_sequential_baseline(
         handle, cfg, w, d_input,
         clean_logit, ivs, seq_sc, &seq_ms);
-    printf("    Sequential time: %.2f ms\n", seq_ms);
+    printf("    Sequential time: %.2f ms\n",
+           seq_ms);
 
     // Run batched engine
     std::vector<float> bat_sc;
@@ -139,9 +147,11 @@ bool run_validation(
         handle, cfg, w, d_input,
         clean_logit, ivs, batch_size,
         bat_sc, &bat_ms);
-    printf("    Batched time:    %.2f ms\n", bat_ms);
+    printf("    Batched time:    %.2f ms\n",
+           bat_ms);
 
-    bool pass = compare_scores(seq_sc, bat_sc, num_iv);
+    bool pass = compare_scores(
+        seq_sc, bat_sc, num_iv);
     print_top_interventions(seq_sc, ivs, num_iv);
     return pass;
 }

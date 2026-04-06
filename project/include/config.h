@@ -24,6 +24,12 @@
 // Vocabulary size for output projection
 #define DEFAULT_VOCAB_SIZE  64
 
+// Number of transformer layers
+#define DEFAULT_NUM_LAYERS  2
+
+// RMSNorm epsilon
+#define DEFAULT_NORM_EPS    1e-5f
+
 // Intervention counts to sweep
 #define NUM_INTERVENTION_SIZES  4
 static const int INTERVENTION_SIZES

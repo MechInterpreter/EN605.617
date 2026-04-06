@@ -5,8 +5,10 @@ CUDA_PATH ?= /usr/local/cuda
 NVCC := $(CUDA_PATH)/bin/nvcc
 HOST_COMPILER ?= g++
 
-# Detect GPU architecture
-GPU_ARCH ?= sm_70
+# Auto-detect GPU architecture if possible
+GPU_ARCH ?= $(shell $(CUDA_PATH)/bin/nvcc \
+    --list-gpu-arch 2>/dev/null | tail -1 | \
+    sed 's/compute_/sm_/' || echo "sm_70")
 
 # Directories
 SRC_DIR   := src
@@ -23,7 +25,8 @@ SOURCES := $(SRC_DIR)/main.cu         \
            $(SRC_DIR)/baseline.cu      \
            $(SRC_DIR)/batched_engine.cu \
            $(SRC_DIR)/benchmark.cu     \
-           $(SRC_DIR)/validation.cu
+           $(SRC_DIR)/validation.cu    \
+           $(SRC_DIR)/weight_io.cu
 
 # Object files
 OBJECTS := $(patsubst $(SRC_DIR)/%.cu,$(OBJ_DIR)/%.o,$(SOURCES))
@@ -83,4 +86,8 @@ help:
 	@echo ""
 	@echo "Variables:"
 	@echo "  CUDA_PATH  (default: /usr/local/cuda)"
-	@echo "  GPU_ARCH   (default: sm_70)"
+	@echo "  GPU_ARCH   (default: auto-detect)"
+	@echo ""
+	@echo "Runtime options:"
+	@echo "  --weights <dir>  Load weights"
+	@echo "  --layers <N>     Num layers"

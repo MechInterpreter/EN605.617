@@ -13,32 +13,52 @@
 #include <cstdio>
 #include <cmath>
 
-// Generate all interventions: sweep (component, token_pos)
+// Generate interventions: sweep
+// (layer, component, token_pos, type).
+// For each layer, generate head ablations and
+// MLP ablations across token positions.
 void generate_interventions(
     const ModelConfig& cfg,
     int num_interventions,
     std::vector<Intervention>& interventions
 ) {
     interventions.resize(num_interventions);
-    int total = cfg.num_components * cfg.seq_len;
+    // Total unique targets:
+    //   L * (num_heads + 1) * seq_len  (ATTN_HEAD + MLP)
+    int targets_per_layer =
+        cfg.num_components * cfg.seq_len;
+    int total = cfg.num_layers * targets_per_layer;
+
     for (int i = 0; i < num_interventions; i++) {
         int idx = i % total;
-        interventions[i].component_idx =
-            idx / cfg.seq_len;
-        interventions[i].token_pos =
-            idx % cfg.seq_len;
+        int layer = idx / targets_per_layer;
+        int rem = idx % targets_per_layer;
+        int comp = rem / cfg.seq_len;
+        int tok  = rem % cfg.seq_len;
+
+        interventions[i].layer_idx = layer;
+        interventions[i].component_idx = comp;
+        interventions[i].token_pos = tok;
+
+        // Head ablation vs MLP ablation
+        if (comp < cfg.num_heads) {
+            interventions[i].type = IV_ATTN_HEAD;
+        } else {
+            interventions[i].type = IV_MLP_OUT;
+        }
     }
 }
 
 // Functor: generate a mask over [S x E] that zeros out
 // the targeted component at the targeted token position.
-
+//
 // Component layout in the residual stream:
 //   head h -> columns [h*head_dim, (h+1)*head_dim)
 //   MLP    -> all E columns at target token
 struct MaskGenerator {
     int S, E, head_dim, num_heads;
     int target_component, target_token;
+    InterventionType type;
 
     __host__ __device__
     float operator()(int flat_idx) const {
@@ -47,13 +67,16 @@ struct MaskGenerator {
 
         if (token != target_token) return 1.0f;
 
-        if (target_component < num_heads) {
+        if (type == IV_ATTN_HEAD
+            && target_component < num_heads) {
             int start = target_component * head_dim;
             int end   = start + head_dim;
             if (col >= start && col < end)
                 return 0.0f;
-        } else {
+        } else if (type == IV_MLP_OUT) {
             return 0.0f;  // Ablate MLP
+        } else if (type == IV_RESID_STREAM) {
+            return 0.0f;  // Ablate full residual
         }
         return 1.0f;
     }
@@ -85,6 +108,7 @@ void generate_ablation_masks(
         gen.num_heads = cfg.num_heads;
         gen.target_component = iv.component_idx;
         gen.target_token     = iv.token_pos;
+        gen.type = iv.type;
 
         // thrust::tabulate fills via functor on GPU
         thrust::tabulate(
