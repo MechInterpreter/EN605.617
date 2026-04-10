@@ -1,0 +1,17 @@
+
+Usage: ./ablation_engine [options]
+
+Options:
+  --platform <N>       Platform index (default: 0)
+  --device <N>         Device index (default: 0)
+  --seq-len <N>        Sequence length (default: 32)
+  --embed-dim <N>      Embedding dim, must be %4==0 (default: 128)
+  --num-heads <N>      Number of attention heads (default: 4)
+  --interventions <N>  Number of interventions (default: 64)
+  --batch-size <N>     Interventions per batch (default: 32)
+  --iterations <N>     Timing iterations (default: 5)
+  --use-map            Use map/unmap instead of R/W
+  --profile            Enable kernel profiling
+  --info               Display device info and exit
+  --help               Show this message
+

@@ -1,0 +1,42 @@
+g++ -std=c++11 -O2 -Wall -Wextra -Iinclude -I/usr/include -c src/main.cpp -o src/main.o
+g++ -std=c++11 -O2 -Wall -Wextra -Iinclude -I/usr/include -c src/cl_setup.cpp -o src/cl_setup.o
+In file included from /usr/include/CL/cl.h:20,
+                 from src/cl_setup.h:10,
+                 from src/cl_setup.cpp:3:
+/usr/include/CL/cl_version.h:22:104: note: ‘#pragma message: cl_version.h: CL_TARGET_OPENCL_VERSION is not defined. Defaulting to 300 (OpenCL 3.0)’
+   22 | #pragma message("cl_version.h: CL_TARGET_OPENCL_VERSION is not defined. Defaulting to 300 (OpenCL 3.0)")
+      |                                                                                                        ^
+In file included from /usr/include/CL/cl.h:20,
+                 from src/cl_setup.h:10,
+                 from src/main.cpp:9:
+/usr/include/CL/cl_version.h:22:104: note: ‘#pragma message: cl_version.h: CL_TARGET_OPENCL_VERSION is not defined. Defaulting to 300 (OpenCL 3.0)’
+   22 | #pragma message("cl_version.h: CL_TARGET_OPENCL_VERSION is not defined. Defaulting to 300 (OpenCL 3.0)")
+      |                                                                                                        ^
+src/cl_setup.cpp: In function ‘int cl_setup_init(CLState*, const RunConfig*)’:
+src/cl_setup.cpp:112:37: warning: ‘_cl_command_queue* clCreateCommandQueue(cl_context, cl_device_id, cl_command_queue_properties, cl_int*)’ is deprecated [-Wdeprecated-declarations]
+  112 |     st->queue = clCreateCommandQueue(
+      |                 ~~~~~~~~~~~~~~~~~~~~^
+  113 |         st->context, st->device, qprops, &err);
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from src/cl_setup.h:10,
+                 from src/cl_setup.cpp:3:
+/usr/include/CL/cl.h:1906:1: note: declared here
+ 1906 | clCreateCommandQueue(cl_context                     context,
+      | ^~~~~~~~~~~~~~~~~~~~
+g++ -std=c++11 -O2 -Wall -Wextra -Iinclude -I/usr/include -c src/device_info.cpp -o src/device_info.o
+In file included from /usr/include/CL/cl.h:20,
+                 from src/device_info.h:9,
+                 from src/device_info.cpp:3:
+/usr/include/CL/cl_version.h:22:104: note: ‘#pragma message: cl_version.h: CL_TARGET_OPENCL_VERSION is not defined. Defaulting to 300 (OpenCL 3.0)’
+   22 | #pragma message("cl_version.h: CL_TARGET_OPENCL_VERSION is not defined. Defaulting to 300 (OpenCL 3.0)")
+      |                                                                                                        ^
+g++ -std=c++11 -O2 -Wall -Wextra -Iinclude -I/usr/include -c src/ablation_engine.cpp -o src/ablation_engine.o
+In file included from /usr/include/CL/cl.h:20,
+                 from src/cl_setup.h:10,
+                 from src/ablation_engine.h:7,
+                 from src/ablation_engine.cpp:4:
+/usr/include/CL/cl_version.h:22:104: note: ‘#pragma message: cl_version.h: CL_TARGET_OPENCL_VERSION is not defined. Defaulting to 300 (OpenCL 3.0)’
+   22 | #pragma message("cl_version.h: CL_TARGET_OPENCL_VERSION is not defined. Defaulting to 300 (OpenCL 3.0)")
+      |                                                                                                        ^
+g++ -std=c++11 -O2 -Wall -Wextra -Iinclude -I/usr/include -o ablation_engine src/main.o src/cl_setup.o src/device_info.o src/ablation_engine.o \
+	-L/usr/lib/x86_64-linux-gnu -lOpenCL

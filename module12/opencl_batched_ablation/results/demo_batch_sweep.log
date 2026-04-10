@@ -1,0 +1,57 @@
+
+====================================================
+  OpenCL Batched Causal Ablation Engine
+====================================================
+
+  Configuration:
+    Embed dim:       128
+    Seq len:         32
+    Num heads:       4
+    Interventions:   128
+    Batch size:      8
+    Iterations:      3
+    Use map/unmap:   no
+    Profiling:       on
+
+  Warming up (2 iters)...
+  Running 3 timed iterations...
+    Iter 1: 0.142496 ms
+    Iter 2: 0.096736 ms
+  [Profile] Forward pass: 0.02128 ms
+  [Profile] Ablation batch 0: 0.005504 ms
+  [Profile] Ablation batch 1: 0.004672 ms
+  [Profile] Ablation batch 2: 0.005376 ms
+  [Profile] Ablation batch 3: 0.004352 ms
+  [Profile] Ablation batch 4: 0.004096 ms
+  [Profile] Ablation batch 5: 0.004096 ms
+  [Profile] Ablation batch 6: 0.00576 ms
+  [Profile] Ablation batch 7: 0.004352 ms
+  [Profile] Ablation batch 8: 0.00432 ms
+  [Profile] Ablation batch 9: 0.004384 ms
+  [Profile] Ablation batch 10: 0.004576 ms
+  [Profile] Ablation batch 11: 0.00432 ms
+  [Profile] Ablation batch 12: 0.004288 ms
+  [Profile] Ablation batch 13: 0.004416 ms
+  [Profile] Ablation batch 14: 0.005376 ms
+  [Profile] Ablation batch 15: 0.005248 ms
+  [Profile] Scoring: 0.032768 ms
+    Iter 3: 0.129184 ms
+
+  Results:
+    Avg GPU time:    0.122805 ms
+    Throughput:      1.0423e+06 iv/sec
+
+  Top 10 causal scores:
+    #1  iv=40  score=23.8482
+    #2  iv=98  score=23.8482
+    #3  iv=97  score=23.8482
+    #4  iv=93  score=23.8482
+    #5  iv=27  score=23.8482
+    #6  iv=90  score=23.8482
+    #7  iv=29  score=23.8482
+    #8  iv=31  score=23.8482
+    #9  iv=32  score=23.8482
+    #10  iv=83  score=23.8482
+
+====================================================
+

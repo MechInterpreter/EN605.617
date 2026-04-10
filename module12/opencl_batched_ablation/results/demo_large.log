@@ -1,0 +1,47 @@
+
+====================================================
+  OpenCL Batched Causal Ablation Engine
+====================================================
+
+  Configuration:
+    Embed dim:       256
+    Seq len:         64
+    Num heads:       8
+    Interventions:   256
+    Batch size:      64
+    Iterations:      5
+    Use map/unmap:   no
+    Profiling:       on
+
+  Warming up (2 iters)...
+  Running 5 timed iterations...
+    Iter 1: 0.135008 ms
+    Iter 2: 0.13376 ms
+    Iter 3: 0.135872 ms
+    Iter 4: 0.134656 ms
+  [Profile] Forward pass: 0.09936 ms
+  [Profile] Ablation batch 0: 0.008128 ms
+  [Profile] Ablation batch 1: 0.006144 ms
+  [Profile] Ablation batch 2: 0.004928 ms
+  [Profile] Ablation batch 3: 0.005792 ms
+  [Profile] Scoring: 0.008768 ms
+    Iter 5: 0.13312 ms
+
+  Results:
+    Avg GPU time:    0.134483 ms
+    Throughput:      1.90358e+06 iv/sec
+
+  Top 10 causal scores:
+    #1  iv=49  score=21.9544
+    #2  iv=238  score=21.9544
+    #3  iv=148  score=21.9544
+    #4  iv=111  score=21.9544
+    #5  iv=149  score=21.9544
+    #6  iv=227  score=21.9544
+    #7  iv=151  score=21.9544
+    #8  iv=104  score=21.9544
+    #9  iv=164  score=21.9544
+    #10  iv=167  score=21.9544
+
+====================================================
+

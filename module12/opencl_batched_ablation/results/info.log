@@ -1,0 +1,32 @@
+=== OpenCL Platforms: 2 ===
+  Platform 0:
+    Name: NVIDIA CUDA
+    Vendor: NVIDIA Corporation
+    Version: OpenCL 3.0 CUDA 13.0.84
+    Device 0:
+      Name: Tesla T4
+      Vendor: NVIDIA Corporation
+      Version: OpenCL 3.0 CUDA
+      Driver: 580.82.07
+      CUs: 40
+      Max Clock (MHz): 1590
+      Global Mem (bytes): 15637086208
+      Local Mem (bytes): 49152
+      Mem Align (bits): 4096
+      Max WG Size: 1024
+  Platform 1:
+    Name: Portable Computing Language
+    Vendor: The pocl project
+    Version: OpenCL 2.0 pocl 1.8  Linux, None+Asserts, RELOC, LLVM 11.1.0, SLEEF, DISTRO, POCL_DEBUG
+    Device 0:
+      Name: pthread-Intel(R) Xeon(R) CPU @ 2.00GHz
+      Vendor: GenuineIntel
+      Version: OpenCL 1.2 pocl HSTR: pthread-x86_64-pc-linux-gnu-skylake-avx512
+      Driver: 1.8
+      CUs: 2
+      Max Clock (MHz): 2000
+      Global Mem (bytes): 11458342912
+      Local Mem (bytes): 524288
+      Mem Align (bits): 1024
+      Max WG Size: 4096
+============================
